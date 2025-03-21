@@ -12,8 +12,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 # tu 
 
-
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
