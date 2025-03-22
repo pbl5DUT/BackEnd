@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-o3!xixv06c6r_kx!1^1l4elu9$18jwxk2n14ka%shhlq#^s5y(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
+DEBUG = False
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = ['*']
@@ -34,6 +35,8 @@ ALLOWED_HOSTS = ['*']
 DEBUG=False
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
+# Nơi chứa tệp tĩnh đã được thu thập (cho môi trường sản xuất)
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Application definition
 
