@@ -40,7 +40,19 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'api',  # app của bạn
+    'rest_framework_simplejwt',
 ]
+
+SIMPLE_JWT = {
+    'USER_ID_FIELD': 'user_id',  # Sử dụng trường user_id làm ID người dùng
+    # Các cấu hình khác của SIMPLE_JWT
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

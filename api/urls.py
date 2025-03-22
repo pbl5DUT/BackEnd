@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from api.views.register_view import RegisterView
 # from .views import UserViewSet, UserListView, UserDetailView
 from .views import UserViewSet, ProjectViewSet
+from api.views.auth_view import LoginView
 
 # Khởi tạo router
 router = DefaultRouter()
@@ -15,5 +16,6 @@ router.register(r'projects', ProjectViewSet)
 
 # Thêm các endpoint tùy chỉnh vào urlpatterns
 urlpatterns = router.urls + [
-    path('register/', RegisterView.as_view(), name='register')
+    path('register/', RegisterView.as_view(), name='register'),
+    path('login/', LoginView.as_view(), name='login'),
 ]
