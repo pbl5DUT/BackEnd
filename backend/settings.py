@@ -107,9 +107,9 @@ DATABASES = {
 
 
    
-     'default': dj_database_url.config(default='mysql://root:PaVNNsQwfKQBkOrkdfjhatOLXQXsNbHC@trolley.proxy.rlwy.net:20565/railway')
+     'default': dj_database_url.config(default='mysql://root:WrxXyxDYxoATWmWwKcSYxqUIheUSYQed@caboose.proxy.rlwy.net:35410/railway')
    
-  
+
     #  'default': {
     #     'ENGINE': 'django.db.backends.mysql',
     #     'NAME': 'pbl5',
