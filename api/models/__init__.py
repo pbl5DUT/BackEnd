@@ -12,3 +12,4 @@ from .message import Message
 from .chatroom import ChatRoom
 from .team import Team
 from .team_user import TeamUser
+from .project_user import ProjectUser 

@@ -25,8 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-o3!xixv06c6r_kx!1^1l4elu9$18jwxk2n14ka%shhlq#^s5y('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
-DEBUG = False
+DEBUG = True
+# DEBUG = False
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -107,17 +107,17 @@ DATABASES = {
 
 
    
-     'default': dj_database_url.config(default='mysql://root:WrxXyxDYxoATWmWwKcSYxqUIheUSYQed@caboose.proxy.rlwy.net:35410/railway')
+    #  'default': dj_database_url.config(default='mysql://root:WrxXyxDYxoATWmWwKcSYxqUIheUSYQed@caboose.proxy.rlwy.net:35410/railway')
    
 
-    #  'default': {
-    #     'ENGINE': 'django.db.backends.mysql',
-    #     'NAME': 'pbl5',
-    #     'USER': 'root',  # Tên user MySQL của bạn
-    #     'PASSWORD': '',  # Nếu bạn đã tạo mật khẩu cho root, điền vào đây
-    #     'HOST': '127.0.0.1',
-    #     'PORT': '3306',
-    # }
+     'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'pbl555',
+        'USER': 'root',  
+        'PASSWORD': '',  
+        'HOST': '127.0.0.1',
+        'PORT': '3307',
+    }
 
     # 'default': {
     #     'ENGINE': 'django.db.backends.sqlite3',

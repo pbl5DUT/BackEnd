@@ -1,0 +1,20 @@
++ để tạo database:
+python manage.py makemigrations
+python manage.py migrate
+
+Tạo môi trường ảo: 
+python3 -m venv venv
+
+
+source venv/bin/activate
+
+
+python manage.py runserver      
+
+python manage.py create_sample_data  # Tạo dữ liệu mẫu
+
+xoa db : python manage.py flush
+
+
+python manage.py makemigrations api
+python manage.py migrate

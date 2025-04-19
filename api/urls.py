@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from api.views.register_view import RegisterView
+from api.views.user_projects import UserProjectsAPIView
 from api.views.user_view import UserViewSet
 from api.views.project_view import ProjectViewSet
 from api.views.auth_view import LoginView
@@ -24,4 +25,5 @@ urlpatterns = [
     path('', include(router.urls)),  # Kết hợp các URL từ router
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
+    path('users/<int:user_id>/projects/', UserProjectsAPIView.as_view(), name='user-projects'),
 ]

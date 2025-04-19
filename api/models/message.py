@@ -10,7 +10,7 @@ class Message(models.Model):
     sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')  # Thêm related_name
     receiver_id = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name='received_messages')  # Thêm related_name
     sent_at = models.DateTimeField(auto_now_add=True)
-    chatroom_id = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
+    chatroom = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.content
