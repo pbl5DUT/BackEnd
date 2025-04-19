@@ -8,6 +8,7 @@ class UserProjectsAPIView(APIView):
     def get(self, request, user_id):
         projects = Project.objects.filter(projectuser__user_id=user_id).distinct()
         serializer = ProjectSerializer(projects, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-       
+        return Response({
+            "count": projects.count(),   # 👈 số lượng project
+            "projects": serializer.data  # 👈 danh sách project
+        }, status=status.HTTP_200_OK)
