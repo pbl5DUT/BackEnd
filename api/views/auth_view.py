@@ -1,4 +1,3 @@
-# api/views/auth_view.py
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,26 +8,28 @@ from django.contrib.auth.hashers import check_password
 
 class LoginView(APIView):
     def post(self, request):
-        # Lấy email và mật khẩu từ dữ liệu yêu cầu
         email = request.data.get('email')
         password = request.data.get('password')
 
-        # Truy vấn người dùng theo email
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise AuthenticationFailed("User not found with this email")
 
-        # Kiểm tra mật khẩu
-        if not user.check_password(password):  # So sánh mật khẩu đã mã hóa
+        if not user.check_password(password):
             raise AuthenticationFailed("Invalid credentials, please try again")
 
-        # Tạo refresh token và access token
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
 
-        # Trả về tokens cho người dùng
+        # Trả về access_token, refresh_token và user info (gồm role)
         return Response({
             'access_token': str(access_token),
             'refresh_token': str(refresh),
+            'user': {
+                'user_id': user.user_id,
+                'full_name': user.full_name,
+                'email': user.email,
+                'role': user.role,  # 👉 thêm role trả ra cho frontend
+            }
         }, status=status.HTTP_200_OK)
