@@ -1,13 +1,15 @@
-# api/models/notification.py
-
+# models/notification.py
 from django.db import models
-from .user import User
+from api.models.user import User
 
 class Notification(models.Model):
     notification_id = models.AutoField(primary_key=True)
     message = models.TextField()
-    sent_to = models.ForeignKey(User, on_delete=models.CASCADE)
-    sent_date = models.DateTimeField(auto_now_add=True)
+    sent_date = models.DateTimeField()
+    sent_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
 
     def __str__(self):
-        return self.message
+        return f"Notification to {self.sent_to}"
+
+    class Meta:
+        db_table = 'api_notification'

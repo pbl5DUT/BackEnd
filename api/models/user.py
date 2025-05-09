@@ -1,3 +1,4 @@
+# models/user.py
 import bcrypt
 from django.db import models
 from api.models.enterprise import Enterprise
@@ -33,7 +34,7 @@ class User(models.Model):
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE, default=1)
+    enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE, related_name='users')
 
     def set_password(self, raw_password):
         """
@@ -50,3 +51,6 @@ class User(models.Model):
 
     def __str__(self):
         return self.full_name
+
+    class Meta:
+        db_table = 'api_user'

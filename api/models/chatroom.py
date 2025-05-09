@@ -1,13 +1,15 @@
-# api/models/chatroom.py
-
+# models/chatroom.py
 from django.db import models
-from .user import User
+from api.models.user import User
 
 class ChatRoom(models.Model):
     chatroom_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    created_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)  # Thêm null=True
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_chatrooms')
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        db_table = 'api_chatroom'

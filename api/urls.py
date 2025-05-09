@@ -22,6 +22,7 @@ router.register(r'projects', ProjectViewSet)
 
 # Thêm các endpoint tùy chỉnh vào urlpatterns
 urlpatterns = [
+
     path('', include(router.urls)),  # Kết hợp các URL từ router
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
