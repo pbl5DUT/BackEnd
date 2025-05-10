@@ -1,36 +1,97 @@
-# models/task.py
+# api/models/task.py
 from django.db import models
 from api.models.user import User
 from api.models.project import Project
+from api.models.task_category import TaskCategory
 
 class Task(models.Model):
     STATUS_CHOICES = [
-        ('TODO', 'To Do'),
-        ('IN_PROGRESS', 'In Progress'),
-        ('DONE', 'Done'),
-        ('CANCELLED', 'Cancelled'),
+        ('Todo', 'Todo'),
+        ('In Progress', 'In Progress'),
+        ('Review', 'Review'),
+        ('Done', 'Done'),
     ]
-
+    
     PRIORITY_CHOICES = [
-        ('LOW', 'Low'),
-        ('MEDIUM', 'Medium'),
-        ('HIGH', 'High'),
-        ('URGENT', 'Urgent'),
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('High', 'High'),
+        ('Urgent', 'Urgent'),
     ]
-
-    task_id = models.AutoField(primary_key=True)
+    
+    task_id = models.CharField(primary_key=True, max_length=50)
     task_name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
-    deadline = models.DateField(blank=True, null=True)
-    assignee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_tasks')
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='Todo'
+    )
+    priority = models.CharField(
+        max_length=20, 
+        choices=PRIORITY_CHOICES, 
+        default='Medium'
+    )
     start_date = models.DateField(blank=True, null=True)
+    due_date = models.DateField(blank=True, null=True)
     actual_end_date = models.DateField(blank=True, null=True)
-    progress = models.IntegerField(default=0)  # Tiến độ công việc, giá trị từ 0-100
+    assignee = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_tasks',
+        db_column='assignee_id'
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='tasks',
+        db_column='project_id'
+    )
+    category = models.ForeignKey(
+        TaskCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tasks',
+        db_column='category_id'
+    )
+    category_name = models.CharField(max_length=255, blank=True, null=True)
+    progress = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Tự động tạo task_id nếu chưa có
+        if not self.task_id:
+            last_task = Task.objects.all().order_by('-task_id').first()
+            if last_task:
+                try:
+                    last_id = int(last_task.task_id.split('-')[1])
+                    self.task_id = f'task-{last_id + 1}'
+                except (IndexError, ValueError):
+                    self.task_id = 'task-1'
+            else:
+                self.task_id = 'task-1'
+        
+        # Tự động cập nhật category_name từ category nếu có
+        if self.category and not self.category_name:
+            self.category_name = self.category.name
+            
+        # Tự động cập nhật progress nếu trạng thái là Done
+        if self.status == 'Done' and self.progress != 100:
+            self.progress = 100
+            
+        super().save(*args, **kwargs)
+        
+        # Cập nhật số lượng task trong category
+        if self.category:
+            total_tasks = Task.objects.filter(category=self.category).count()
+            completed_tasks = Task.objects.filter(category=self.category, status='Done').count()
+            self.category.tasks_count = total_tasks
+            self.category.completed_tasks_count = completed_tasks
+            self.category.save()
 
     def __str__(self):
         return self.task_name

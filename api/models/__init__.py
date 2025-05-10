@@ -35,3 +35,4 @@ from api.models.calendar import Calendar
 from api.models.calendar_event_participant import CalendarEventParticipant
 from api.models.knowledge_category import KnowledgeCategory
 from api.models.knowledge_article import KnowledgeArticle
+from api.models.task_category import TaskCategory
