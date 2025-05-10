@@ -1,32 +1,18 @@
-# api/views/project_view.py
-from rest_framework import viewsets, status
+# api/views/project_member_views.py
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 from api.models.project import Project
 from api.models.project_user import ProjectUser
-from api.serializers.project_serializer import ProjectSerializer
 from api.serializers.project_member_serializer import AddProjectMemberSerializer
 from api.serializers.project_user_serializer import ProjectUserSerializer
 
-class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'project_id'  # Sử dụng project_id thay vì pk mặc định
-    
+class ProjectViewSet(ModelViewSet):
+    # Thêm action để quản lý thành viên
     @action(detail=True, methods=['post'])
-    def members(self, request, project_id=None):
-        """
-        Thêm thành viên vào project
-        URL: POST /api/projects/{project_id}/members/
-        """
-        try:
-            project = self.get_object()
-        except Project.DoesNotExist:
-            return Response(
-                {"error": "Project không tồn tại"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-            
+    def add_member(self, request, pk=None):
+        project = self.get_object()
         serializer = AddProjectMemberSerializer(data=request.data, context={'project': project})
         
         if serializer.is_valid():
@@ -38,11 +24,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['delete'])
-    def remove_member(self, request, project_id=None):
-        """
-        Xóa thành viên khỏi project
-        URL: DELETE /api/projects/{project_id}/members/?user_id={user_id}
-        """
+    def remove_member(self, request, pk=None):
         project = self.get_object()
         user_id = request.query_params.get('user_id')
         
@@ -61,9 +43,3 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 {"error": "User is not a member of this project"},
                 status=status.HTTP_404_NOT_FOUND
             )
-
-    # Ghi đè list để có thể trả về dự án với thông tin thành viên
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)

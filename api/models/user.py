@@ -16,12 +16,12 @@ class User(models.Model):
         ('Other', 'Other'),
     ]
 
-    user_id = models.AutoField(primary_key=True)
+    user_id = models.CharField(primary_key=True, max_length=50)
     full_name = models.CharField(max_length=255)
     
     email = models.EmailField(max_length=254, unique=True)
-    password = models.CharField(max_length=60)  # bcrypt hash có độ dài cố định là 60
-    role = models.CharField(choices=ROLE_CHOICES, max_length=20)
+    password = models.CharField(max_length=60)
+    role = models.CharField(choices=ROLE_CHOICES, max_length=20, default='User')
     department = models.CharField(max_length=255, blank=True, null=True)
     
     gender = models.CharField(choices=GENDER_CHOICES, max_length=10, blank=True, null=True)
@@ -31,10 +31,11 @@ class User(models.Model):
     district = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     position = models.CharField(max_length=255, blank=True, null=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    avatar = models.CharField(max_length=255, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE, related_name='users')
+    # Simplemente usar ForeignKey sin especificar to_field
+    enterprise = models.ForeignKey(Enterprise, db_column='enterprise_id', on_delete=models.CASCADE, related_name='users')
 
     def set_password(self, raw_password):
         """
@@ -48,6 +49,23 @@ class User(models.Model):
         Kiểm tra mật khẩu người dùng nhập vào với mật khẩu đã băm.
         """
         return bcrypt.checkpw(raw_password.encode('utf-8'), self.password.encode('utf-8'))
+
+    def save(self, *args, **kwargs):
+        # Tạo user_id định dạng 'user-{id}' nếu chưa được thiết lập
+        if not self.user_id:
+            # Tìm user_id lớn nhất trong database để tạo ID mới
+            last_user = User.objects.all().order_by('-user_id').first()
+            if last_user:
+                # Tách số từ 'user-X' và tăng lên 1
+                try:
+                    last_id = int(last_user.user_id.split('-')[1])
+                    self.user_id = f'user-{last_id + 1}'
+                except (IndexError, ValueError):
+                    self.user_id = 'user-1'
+            else:
+                self.user_id = 'user-1'
+        
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.full_name
