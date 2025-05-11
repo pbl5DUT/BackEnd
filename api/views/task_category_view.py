@@ -18,13 +18,16 @@ class TaskCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = TaskCategory.objects.all()
         
-        # Lọc theo project_id
-        project_id = self.kwargs.get('project__pk')
+        # Lấy project_id từ parameter đúng
+        project_id = self.kwargs.get('project_project_id')  # Đây là tên parameter đúng
+        print(f"🔍 project_project_id from URL: {project_id}")
+        
         if project_id:
             queryset = queryset.filter(project__project_id=project_id)
+            print(f"🔍 Filtered queryset count: {queryset.count()}")
         
         return queryset
-    
+
     @action(detail=True, methods=['get'])
     def tasks(self, request, id=None):
         """

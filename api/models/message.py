@@ -8,7 +8,7 @@ class Message(models.Model):
     content = models.TextField()
     sent_at = models.DateTimeField()
     chatroom = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
-    receiver_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='received_messages')
+    receiver_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='received_messages', db_column='receiver_id')
     sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
 
     def __str__(self):
