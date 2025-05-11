@@ -26,15 +26,37 @@ SECRET_KEY = 'django-insecure-o3!xixv06c6r_kx!1^1l4elu9$18jwxk2n14ka%shhlq#^s5y(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-# DEBUG = False
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Cấu hình CORS chi tiết
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization']
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+# Cho phép các phương thức HTTP
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = ['*']
-
-
-DEBUG=False
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 # Nơi chứa tệp tĩnh đã được thu thập (cho môi trường sản xuất)
@@ -49,6 +71,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
 
     'rest_framework',
     'api',  # app của bạn
@@ -57,17 +80,19 @@ INSTALLED_APPS = [
 ]
 
 SIMPLE_JWT = {
-    'USER_ID_FIELD': 'user_id',  # Sử dụng trường user_id làm ID người dùng
+    'USER_ID_FIELD': 'id',  # Use Django default User model's primary key field
+    'USER_ID_CLAIM': 'user_id',  # This makes the JWT token include 'user_id' in the payload
     # Các cấu hình khác của SIMPLE_JWT
 }
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'api.authentication.CustomJWTAuthentication',  # Use our custom authentication class
     ),
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Thêm CORS middleware đầu tiên
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,8 +100,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -164,7 +187,21 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (User uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Channels configuration
+ASGI_APPLICATION = 'backend.asgi.application'
+
+# Channel layers for WebSocket
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}

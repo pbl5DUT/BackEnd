@@ -1,0 +1,1 @@
+# Make authentication module visible for Django settings
