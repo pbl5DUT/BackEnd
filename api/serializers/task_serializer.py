@@ -16,7 +16,7 @@ class ProjectSimpleSerializer(serializers.ModelSerializer):
     """Simple serializer cho Project"""
     class Meta:
         model = Project
-        fields = ['project_id', 'name']
+        fields = ['project_id', 'project_name']
 
 class TaskSerializer(serializers.ModelSerializer):
     # Read-only fields (cho output)

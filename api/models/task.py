@@ -1,8 +1,8 @@
-# api/models/task.py
 from django.db import models
 from api.models.user import User
 from api.models.project import Project
 from api.models.task_category import TaskCategory
+import uuid
 
 class Task(models.Model):
     STATUS_CHOICES = [
@@ -22,16 +22,8 @@ class Task(models.Model):
     task_id = models.CharField(primary_key=True, max_length=50)
     task_name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    status = models.CharField(
-        max_length=20, 
-        choices=STATUS_CHOICES, 
-        default='Todo'
-    )
-    priority = models.CharField(
-        max_length=20, 
-        choices=PRIORITY_CHOICES, 
-        default='Medium'
-    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Todo')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Medium')
     start_date = models.DateField(blank=True, null=True)
     due_date = models.DateField(blank=True, null=True)
     actual_end_date = models.DateField(blank=True, null=True)
@@ -63,29 +55,21 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Tự động tạo task_id nếu chưa có
+        # Tạo task_id duy nhất nếu chưa có
         if not self.task_id:
-            last_task = Task.objects.all().order_by('-task_id').first()
-            if last_task:
-                try:
-                    last_id = int(last_task.task_id.split('-')[1])
-                    self.task_id = f'task-{last_id + 1}'
-                except (IndexError, ValueError):
-                    self.task_id = 'task-1'
-            else:
-                self.task_id = 'task-1'
-        
-        # Tự động cập nhật category_name từ category nếu có
+            self.task_id = f"task-{uuid.uuid4().hex[:8]}"
+
+        # Cập nhật category_name nếu có category
         if self.category and not self.category_name:
             self.category_name = self.category.name
             
-        # Tự động cập nhật progress nếu trạng thái là Done
+        # Nếu trạng thái là Done thì set progress = 100
         if self.status == 'Done' and self.progress != 100:
             self.progress = 100
             
         super().save(*args, **kwargs)
-        
-        # Cập nhật số lượng task trong category
+
+        # Cập nhật lại số lượng task trong category
         if self.category:
             total_tasks = Task.objects.filter(category=self.category).count()
             completed_tasks = Task.objects.filter(category=self.category, status='Done').count()
