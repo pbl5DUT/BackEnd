@@ -157,7 +157,7 @@ DATABASES = {
 
      'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pbl5_1',
+        'NAME': 'pbl5',
         'USER': 'root',  
         'PASSWORD': '',  
         'HOST': '127.0.0.1',
