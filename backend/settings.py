@@ -26,8 +26,7 @@ SECRET_KEY = 'django-insecure-o3!xixv06c6r_kx!1^1l4elu9$18jwxk2n14ka%shhlq#^s5y(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-<<<<<<< HEAD
-=======
+
 # DEBUG = False
 LOGGING = {
     'version': 1,
@@ -44,7 +43,7 @@ LOGGING = {
         },
     },
 }
->>>>>>> 2698da62386a139f669c40b5e4840cd972033523
+
 
 # Cấu hình CORS chi tiết
 CORS_ALLOWED_ORIGINS = [

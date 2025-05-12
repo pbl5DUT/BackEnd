@@ -10,12 +10,8 @@ class Message(models.Model):
     is_read = models.BooleanField(default=False)
     sent_at = models.DateTimeField(auto_now_add=True)
     chatroom = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
-<<<<<<< HEAD
-=======
-    receiver_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='received_messages', db_column='receiver_id')
->>>>>>> 2698da62386a139f669c40b5e4840cd972033523
-    sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     receiver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='received_messages')
+    sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     
     class Meta:
         db_table = 'api_message'
