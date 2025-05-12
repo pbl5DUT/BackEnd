@@ -4,7 +4,7 @@ from api.models.project import Project
 
 class TaskCategory(models.Model):
     id = models.CharField(primary_key=True, max_length=50)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     project = models.ForeignKey(
         Project,

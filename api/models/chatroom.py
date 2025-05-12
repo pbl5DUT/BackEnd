@@ -3,6 +3,7 @@ from .user import User
 from .project import Project
 
 class ChatRoom(models.Model):
+
     chatroom_id = models.CharField(primary_key=True, max_length=50)
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=50)  # 'Project', 'Private', etc.

@@ -1,6 +1,7 @@
 # api/models/project.py
 from django.db import models
 from api.models.user import User
+from django.utils import timezone
 
 class Project(models.Model):
     STATUS_CHOICES = [
@@ -30,7 +31,8 @@ class Project(models.Model):
         db_column='manager_id'
     )
     progress = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    # Thay đổi từ auto_now_add=True thành default=timezone.now
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):

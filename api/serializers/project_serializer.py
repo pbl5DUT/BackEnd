@@ -63,4 +63,4 @@ class ProjectSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         
         instance.save()
-        return instance
+        return instance  # Thêm return instance ở đây

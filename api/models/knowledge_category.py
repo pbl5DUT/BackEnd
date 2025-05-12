@@ -3,7 +3,7 @@ from django.db import models
 
 class KnowledgeCategory(models.Model):
     id = models.CharField(primary_key=True, max_length=50)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     iconUrl = models.CharField(max_length=255, blank=True, null=True)
     createdBy = models.CharField(max_length=50)

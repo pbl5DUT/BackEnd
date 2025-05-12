@@ -14,7 +14,7 @@ from api.views.message_views import MessageViewSet
 from api.views.register_view import RegisterView
 
 from rest_framework_nested import routers
-
+from . import views
 
 # Khởi tạo router
 router = DefaultRouter()
@@ -40,7 +40,6 @@ urlpatterns = [
     path('', include(project_router.urls)),  # Nested router cho task-categories
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
-    
-
-]   
+    path('send-password-email/', views.send_password_email, name='send_password_email'),
+]
 

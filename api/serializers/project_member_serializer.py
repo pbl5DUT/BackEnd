@@ -2,7 +2,6 @@
 from rest_framework import serializers
 from api.models.project_user import ProjectUser
 from api.models.user import User
-from api.models.project import Project
 from datetime import date
 
 class AddProjectMemberSerializer(serializers.Serializer):
