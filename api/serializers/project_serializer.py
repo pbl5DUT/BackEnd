@@ -17,7 +17,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'project_id', 'project_name', 'description', 'status',
             'start_date', 'end_date', 'manager', 'manager_id',
             'progress', 'created_at', 'updated_at', 'members'
-        ]
+        ]   
         extra_kwargs = {
             'project_id': {'required': False},
             'progress': {'required': False},

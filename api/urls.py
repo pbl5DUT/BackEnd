@@ -6,15 +6,26 @@ from api.views.task_view import TaskViewSet
 from api.views.team_view import TeamViewSet
 from api.views.task_category_view import TaskCategoryViewSet
 from api.views.auth_view import LoginView
+
+from api.views.auth_check_view import AuthCheckView
+from api.views.chatroom_views import ChatRoomViewSet
+from api.views.message_views import MessageViewSet
+
 from api.views.register_view import RegisterView
 
 from rest_framework_nested import routers
+from . import views
 
 # Khởi tạo router
 router = DefaultRouter()
 
 # Đăng ký viewset với router
 router.register(r'users', UserViewSet)
+router.register(r'projects', ProjectViewSet)
+router.register(r'chatrooms', ChatRoomViewSet)
+router.register(r'messages', MessageViewSet)
+
+
 router.register(r'projects', ProjectViewSet)  # Đảm bảo chỉ đăng ký 1 lần
 router.register(r'tasks', TaskViewSet)
 router.register(r'teams', TeamViewSet)
@@ -29,4 +40,6 @@ urlpatterns = [
     path('', include(project_router.urls)),  # Nested router cho task-categories
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
+    path('send-password-email/', views.send_password_email, name='send_password_email'),
 ]
+

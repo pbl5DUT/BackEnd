@@ -71,6 +71,14 @@ class User(models.Model):
             self.created_at = timezone.now()
         
         super().save(*args, **kwargs)
+    
+    @property
+    def is_authenticated(self):
+        """
+        Always return True for custom User model.
+        This is used by DRF for permission checks.
+        """
+        return True
 
     def __str__(self):
         return self.full_name
