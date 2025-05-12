@@ -53,19 +53,23 @@ class User(models.Model):
     def save(self, *args, **kwargs):
         # Tạo user_id định dạng 'user-{id}' nếu chưa được thiết lập
         if not self.user_id:
-            # Tìm user_id lớn nhất trong database để tạo ID mới
-            last_user = User.objects.all().order_by('-user_id').first()
-            if last_user:
-                # Tách số từ 'user-X' và tăng lên 1
-                try:
-                    last_id = int(last_user.user_id.split('-')[1])
-                    self.user_id = f'user-{last_id + 1}'
-                except (IndexError, ValueError):
-                    self.user_id = 'user-1'
-            else:
-                self.user_id = 'user-1'
-
-            # Đảm bảo created_at luôn có giá trị
+            # Truy vấn trực tiếp để tìm ID lớn nhất từ tất cả user_id
+            from django.db import connection
+            
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT MAX(CAST(SUBSTRING(user_id, 6) AS UNSIGNED)) FROM api_user")
+                result = cursor.fetchone()[0]
+                
+                # Nếu không có kết quả (bảng trống) hoặc lỗi, bắt đầu từ 1
+                if result is None:
+                    next_id = 1
+                else:
+                    next_id = result + 1
+                    
+                self.user_id = f'user-{next_id}'
+                print(f"Tạo user_id mới: {self.user_id}")
+        
+        # Đảm bảo created_at luôn có giá trị
         if not self.created_at:
             from django.utils import timezone
             self.created_at = timezone.now()

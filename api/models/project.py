@@ -38,15 +38,24 @@ class Project(models.Model):
     def save(self, *args, **kwargs):
         # Tự động tạo project_id nếu chưa có
         if not self.project_id:
-            last_project = Project.objects.all().order_by('-project_id').first()
-            if last_project:
+            # Lấy tất cả project_id hiện có từ database
+            existing_ids = Project.objects.values_list('project_id', flat=True)
+            
+            # Tìm số lớn nhất từ các project_id hiện có
+            max_id = 0
+            for pid in existing_ids:
                 try:
-                    last_id = int(last_project.project_id.split('-')[1])
-                    self.project_id = f'prj-{last_id + 1}'
+                    # Tách số từ 'prj-X'
+                    id_num = int(pid.split('-')[1])
+                    if id_num > max_id:
+                        max_id = id_num
                 except (IndexError, ValueError):
-                    self.project_id = 'prj-1'
-            else:
-                self.project_id = 'prj-1'
+                    continue
+            
+            # Tạo project_id mới
+            self.project_id = f'prj-{max_id + 1}'
+            
+            print(f"Tạo project_id mới: {self.project_id}")
         
         super().save(*args, **kwargs)
 
