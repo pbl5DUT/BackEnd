@@ -9,6 +9,8 @@ class ProjectUser(models.Model):
         ('Member', 'Member'),
         ('Support', 'Support'),
         ('Observer', 'Observer'),
+        ('Developer', 'Developer'),  
+        ('Tester', 'Tester'),   
     ]
 
     id = models.CharField(primary_key=True, max_length=50)

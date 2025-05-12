@@ -67,3 +67,68 @@ class ProjectViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+     # api/views/project_view.py
+    # api/views/project_view.py
+    def create(self, request, *args, **kwargs):
+        # Lấy bản sao của dữ liệu request
+        data = request.data.copy()
+        
+        # Tách members từ dữ liệu request
+        members_data = data.pop('members', [])
+        
+        # Tạo project bằng serializer
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        project = serializer.save()
+        
+        # Thêm debug để theo dõi quá trình
+        print(f"Project đã được tạo: {project.project_id}")
+        print(f"Thành viên cần thêm: {members_data}")
+        
+        # Thêm các thành viên vào project
+        for member_data in members_data:
+            try:
+                # Map vai trò nếu cần - ví dụ: Developer -> Member
+                role_mapping = {
+                    'Developer': 'Member',
+                    'Tester': 'Support'
+                }
+                
+                original_role = member_data.get('role_in_project')
+                # Nếu vai trò không nằm trong ROLE_CHOICES, áp dụng mapping
+                if original_role not in [choice[0] for choice in ProjectUser.ROLE_CHOICES]:
+                    if original_role in role_mapping:
+                        member_data['role_in_project'] = role_mapping[original_role]
+                        print(f"Đã map vai trò {original_role} -> {member_data['role_in_project']}")
+                    else:
+                        # Nếu không có mapping, sử dụng 'Member' làm default
+                        member_data['role_in_project'] = 'Member'
+                        print(f"Vai trò {original_role} không hợp lệ, sử dụng 'Member'")
+                
+                # Tạo context chứa project
+                context = {'project': project}
+                
+                # Sử dụng AddProjectMemberSerializer
+                member_serializer = AddProjectMemberSerializer(
+                    data=member_data,
+                    context=context
+                )
+                
+                if member_serializer.is_valid():
+                    member_serializer.save()
+                    print(f"Đã thêm thành công thành viên: {member_data['user_id']}")
+                else:
+                    print(f"Lỗi khi validate thành viên: {member_serializer.errors}")
+            except Exception as e:
+                print(f"Lỗi không xác định khi thêm thành viên: {str(e)}")
+                import traceback
+                traceback.print_exc()
+        
+        # Đảm bảo lấy dữ liệu mới nhất của project
+        updated_project = self.get_queryset().get(project_id=project.project_id)
+        
+        # Trả về response
+        return Response(
+            self.get_serializer(updated_project).data,
+            status=status.HTTP_201_CREATED
+        )
