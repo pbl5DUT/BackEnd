@@ -5,7 +5,7 @@ from api.models.task import Task
 
 class TaskAttachment(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True, blank=True)
     file_url = models.CharField(max_length=255)
     file_type = models.CharField(max_length=50)
     file_size = models.IntegerField()

@@ -64,6 +64,11 @@ class User(models.Model):
                     self.user_id = 'user-1'
             else:
                 self.user_id = 'user-1'
+
+            # Đảm bảo created_at luôn có giá trị
+        if not self.created_at:
+            from django.utils import timezone
+            self.created_at = timezone.now()
         
         super().save(*args, **kwargs)
 

@@ -4,7 +4,7 @@ from api.models.user import User
 
 class ChatRoom(models.Model):
     chatroom_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField()
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_chatrooms')
 

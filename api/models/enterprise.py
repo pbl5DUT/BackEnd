@@ -3,7 +3,7 @@ from django.db import models
 
 class Enterprise(models.Model):
     enterprise_id = models.CharField(primary_key=True, max_length=50)  # Thay đổi từ EnterpriseID (AutoField) thành enterprise_id (CharField)
-    name = models.CharField(max_length=255)  # Thay đổi từ Name thành name để khớp với SQL
+    name = models.CharField(max_length=255, null=True, blank=True) # Thay đổi từ Name thành name để khớp với SQL
     address = models.CharField(max_length=255)  # Thay đổi từ Address thành address
     phone_number = models.CharField(max_length=50)  # Thay đổi từ PhoneNumber thành phone_number
     email = models.EmailField(max_length=254)  # Giữ nguyên
