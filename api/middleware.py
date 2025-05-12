@@ -16,16 +16,21 @@ def get_user(token_key):
         if not user_id:
             return AnonymousUser()
         
-        # Get the user from the database
-        User = get_user_model()
+        # Thử custom user model trước vì chúng ta biết user_id có dạng chuỗi
+        from api.models.user import User as CustomUser
         try:
-            return User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            # Try custom user model if exists
-            from api.models.user import User as CustomUser
+            user = CustomUser.objects.get(user_id=user_id)
+            print(f"✅ WebSocket authenticated as user: {user_id}")
+            return user
+        except CustomUser.DoesNotExist:
+            # Thử tìm trong model mặc định (thường không cần thiết)
             try:
-                return CustomUser.objects.get(user_id=user_id)
-            except CustomUser.DoesNotExist:
+                User = get_user_model()
+                # Chỉ thử tìm bằng id nếu user_id là số
+                if isinstance(user_id, (int, float)) or (isinstance(user_id, str) and user_id.isdigit()):
+                    return User.objects.get(id=user_id)
+                return AnonymousUser()
+            except Exception:
                 return AnonymousUser()
                 
     except Exception as e:
@@ -41,11 +46,15 @@ class TokenAuthMiddleware(BaseMiddleware):
         
         if token:
             # Get the user from the token
-            scope['user'] = await get_user(token)
+            user = await get_user(token)
+            # Add the user to the scope
+            scope['user'] = user
         else:
+            # No token, set anonymous user
             scope['user'] = AnonymousUser()
             
         return await super().__call__(scope, receive, send)
 
+# Đảm bảo TokenAuthMiddlewareStack được định nghĩa đúng cách
 def TokenAuthMiddlewareStack(inner):
     return TokenAuthMiddleware(inner)

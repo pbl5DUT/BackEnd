@@ -14,13 +14,21 @@ class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
-    
     def create(self, request, *args, **kwargs):
         data = request.data
         user = request.user
         
+        # Get chatroom ID from either 'chatroom' or 'chatroom_id' field
+        chatroom_id = data.get('chatroom_id') or data.get('chatroom')
+        if not chatroom_id:
+            return Response({"error": "Chatroom ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Handle different chatroom ID formats (chat_ vs chat-)
+        if chatroom_id and chatroom_id.startswith('chat_'):
+            chatroom_id = chatroom_id.replace('chat_', 'chat-')
+        
         try:
-            chatroom = ChatRoom.objects.get(chatroom_id=data.get('chatroom'))
+            chatroom = ChatRoom.objects.get(chatroom_id=chatroom_id)
             
             # Check if user is participant in the chat room
             if not chatroom.participants.filter(user_id=user.user_id).exists():
@@ -43,14 +51,18 @@ class MessageViewSet(viewsets.ModelViewSet):
                 content=data.get('content'),
                 chatroom=chatroom,
                 sent_by=user,
-                receiver=receiver
+                receiver=receiver,
+                attachment_url=data.get('attachment_url'),
+                attachment_type=data.get('attachment_type')
             )
             
             serializer = MessageSerializer(message)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)        
         except ChatRoom.DoesNotExist:
-            return Response({"error": "Chat room not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": f"Chatroom with ID {chatroom_id} does not exist"}, 
+                            status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_attachment(self, request):

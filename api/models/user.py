@@ -68,6 +68,10 @@ class User(models.Model):
         super().save(*args, **kwargs)
     
     @property
+    def is_anonymous(self):
+        return False
+
+    @property
     def is_authenticated(self):
         """
         Always return True for custom User model.
