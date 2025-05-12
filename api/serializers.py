@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Project, Task, Comment
+from .models import User, Project, Task, Comment, ChatRoom
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,5 +32,7 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ['comment_id', 'content', 'created_by', 'created_at', 'related_task', 'related_project']
 
-
-
+class ChatroomsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatRoom
+        fields = ['chatroom_id', 'name', 'participants', 'is_group', 'last_message', 'unread_count']
