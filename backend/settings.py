@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -227,8 +228,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-import os
-from dotenv import load_dotenv
+
 
 # Nạp file .env vào môi trường
 load_dotenv()
