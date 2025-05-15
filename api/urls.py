@@ -15,6 +15,7 @@ from api.views.register_view import RegisterView
 
 from rest_framework_nested import routers
 from . import views
+from .views import check_email
 
 # Khởi tạo router
 router = DefaultRouter()
@@ -41,5 +42,6 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('send-password-email/', views.send_password_email, name='send_password_email'),
+    path('check-email/', check_email.check_email_exists, name='check_email_exists'),
 ]
 

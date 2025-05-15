@@ -7,3 +7,4 @@ from .project_view import ProjectViewSet
 from .register_view import RegisterView
 from .auth_view import LoginView
 from .sendgrid_email import send_password_email
+from .check_email import check_email_exists
