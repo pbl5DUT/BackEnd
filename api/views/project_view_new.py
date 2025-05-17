@@ -13,7 +13,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     lookup_field = 'project_id'  # Sử dụng project_id thay vì pk mặc định
     
-    @action(detail=False, methods=['get'], url_path='user-projects')
+    @action(detail=False, methods=['get'])
     def user_projects(self, request):
         """
         Lấy danh sách các dự án mà người dùng hiện tại là thành viên

@@ -24,9 +24,6 @@ router.register(r'users', UserViewSet)
 router.register(r'projects', ProjectViewSet)
 router.register(r'chatrooms', ChatRoomViewSet)
 router.register(r'messages', MessageViewSet)
-
-
-router.register(r'projects', ProjectViewSet)  # Đảm bảo chỉ đăng ký 1 lần
 router.register(r'tasks', TaskViewSet)
 router.register(r'teams', TeamViewSet)
 

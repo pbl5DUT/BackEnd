@@ -27,6 +27,34 @@ class TaskCategoryViewSet(viewsets.ModelViewSet):
             print(f"🔍 Filtered queryset count: {queryset.count()}")
         
         return queryset
+    
+    # Thêm phương thức create để tự động gán project_id
+    def create(self, request, *args, **kwargs):
+        print(f"📝 Create method called with args: {args}, kwargs: {kwargs}")
+        print(f"📝 Request data: {request.data}")
+        
+        # Lấy project_id từ URL parameters
+        project_id = self.kwargs.get('project_project_id')
+        
+        if not project_id:
+            return Response(
+                {"error": "Project ID not found in URL"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Tạo bản sao của request.data để tránh thay đổi request gốc
+        data = request.data.copy()
+        # Tự động thêm project_id vào dữ liệu
+        data['project'] = project_id
+        
+        print(f"📝 Modified data with project: {data}")
+        
+        # Sử dụng serializer với dữ liệu đã được bổ sung project_id
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=['get'])
     def tasks(self, request, id=None):
