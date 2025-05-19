@@ -21,9 +21,22 @@ class TaskViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Task.objects.all()
         
+        # Lọc theo URL parameters từ nested routes
+        project_pk = self.kwargs.get('project_pk')
+        category_pk = self.kwargs.get('category_pk')
+        
+        if project_pk:
+            queryset = queryset.filter(project__project_id=project_pk)
+            print(f"Filtered by project_pk from URL: {project_pk}")
+            
+        if category_pk:
+            queryset = queryset.filter(category__id=category_pk)
+            print(f"Filtered by category_pk from URL: {category_pk}")
+        
+        # Các logic lọc hiện tại
         # Lọc theo project_id
         project_id = self.request.query_params.get('project_id')
-        if project_id:
+        if project_id and not project_pk:
             queryset = queryset.filter(project__project_id=project_id)
             
         # Lọc theo assignee_id
@@ -32,9 +45,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(assignee__user_id=assignee_id)
             
         # Lọc theo status
-        status = self.request.query_params.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
             
         # Lọc theo priority
         priority = self.request.query_params.get('priority')
@@ -43,7 +56,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             
         # Lọc theo category_id
         category_id = self.request.query_params.get('category_id')
-        if category_id:
+        if category_id and not category_pk:
             queryset = queryset.filter(category__id=category_id)
             
         # Tìm kiếm theo từ khóa
@@ -56,6 +69,33 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         return queryset
     
+    def create(self, request, *args, **kwargs):
+        print(f"Create task called with kwargs: {kwargs}")
+        
+        # Lấy project_id và category_id từ URL 
+        project_pk = self.kwargs.get('project_pk')
+        category_pk = self.kwargs.get('category_pk')
+        
+        # Tạo bản sao của request.data
+        data = request.data.copy()
+        
+        # Thêm project_id và category_id từ URL vào data nếu có
+        if project_pk:
+            data['project_id'] = project_pk
+            print(f"Added project_id from URL: {project_pk}")
+            
+        if category_pk:
+            data['category_id'] = category_pk
+            print(f"Added category_id from URL: {category_pk}")
+        
+        # Tiếp tục với quá trình tạo task
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    # Giữ nguyên các action hiện tại
     @action(detail=True, methods=['get'])
     def comments(self, request, task_id=None):
         """

@@ -34,10 +34,15 @@ router.register(r'teams', TeamViewSet)
 project_router = routers.NestedDefaultRouter(router, r'projects', lookup='project')
 project_router.register(r'task-categories', TaskCategoryViewSet, basename='project-task-categories')
 
+# Tạo nested router cho tasks trong project-task-categories
+task_category_router = routers.NestedDefaultRouter(project_router, r'task-categories', lookup='category')
+task_category_router.register(r'tasks', TaskViewSet, basename='category-tasks')
+
 # Thêm các endpoint tùy chỉnh vào urlpatterns
 urlpatterns = [
     path('', include(router.urls)),  # Kết hợp các URL từ router
     path('', include(project_router.urls)),  # Nested router cho task-categories
+    path('', include(task_category_router.urls)),   
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('send-password-email/', views.send_password_email, name='send_password_email'),

@@ -56,11 +56,13 @@ class TaskCategoryViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    # Trong api/views/task_category_view.p
+    
     @action(detail=True, methods=['get'])
-    def tasks(self, request, id=None):
+    def tasks(self, request, id=None, project_project_id=None):
         """
         Lấy danh sách task của category
-        URL: GET /api/categories/{id}/tasks/
+        URL: GET /api/projects/{project_id}/task-categories/{id}/tasks/
         """
         category = self.get_object()
         tasks = Task.objects.filter(category=category)
@@ -72,6 +74,35 @@ class TaskCategoryViewSet(viewsets.ModelViewSet):
             
         serializer = TaskSerializer(tasks, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], url_path='tasks')
+    def create_task(self, request, id=None, project_project_id=None):
+        """
+        Tạo task mới trong category
+        URL: POST /api/projects/{project_id}/task-categories/{id}/tasks/
+        """
+        category = self.get_object()
+        
+        # Tạo bản sao của request.data
+        data = request.data.copy()
+        
+        # Thêm project_id và category_id
+        data['project_id'] = project_project_id
+        data['category_id'] = id
+        
+        # In thông tin debug
+        print(f"Creating task with data: {data}")
+        
+        # Sử dụng TaskSerializer để tạo task
+        serializer = TaskSerializer(data=data)
+        
+        if serializer.is_valid():
+            task = serializer.save()
+            print(f"Task created successfully with ID: {task.task_id}")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        print(f"Validation errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -109,4 +140,4 @@ class TaskCategoryViewSet(viewsets.ModelViewSet):
                 }
             })
             
-        return Response(result)
+        return Response(result) 
