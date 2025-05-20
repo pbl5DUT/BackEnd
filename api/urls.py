@@ -35,6 +35,7 @@ router.register(r'teams', TeamViewSet)
 project_router = routers.NestedDefaultRouter(router, r'projects', lookup='project')
 project_router.register(r'task-categories', TaskCategoryViewSet, basename='project-task-categories')
 
+
 # Tạo nested router cho tasks trong project-task-categories
 task_category_router = routers.NestedDefaultRouter(project_router, r'task-categories', lookup='category')
 task_category_router.register(r'tasks', TaskViewSet, basename='category-tasks')
