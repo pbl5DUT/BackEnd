@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+from datetime import timedelta
 import os
 from pathlib import Path
 
@@ -102,9 +103,12 @@ INSTALLED_APPS = [
 ]
 
 SIMPLE_JWT = {
-    'USER_ID_FIELD': 'id',  # Use Django default User model's primary key field
-    'USER_ID_CLAIM': 'user_id',  # This makes the JWT token include 'user_id' in the payload
-    # Các cấu hình khác của SIMPLE_JWT
+   'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),   # Access token sống 15 phút
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),      # Refresh token sống 7 ngày
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'USER_ID_FIELD': 'id',  # đã có sẵn trong bạn config rồi
+    'USER_ID_CLAIM': 'user_id',
 }
 
 REST_FRAMEWORK = {
