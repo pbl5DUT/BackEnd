@@ -17,6 +17,7 @@ from rest_framework_nested import routers
 from api.views.sendgrid_email import send_password_email
 from .views import check_email
 from api.views import calendar_views as views
+from .views import NotificationViewSet
 # Khởi tạo router
 router = DefaultRouter()
 
@@ -25,7 +26,7 @@ router.register(r'users', UserViewSet)
 router.register(r'projects', ProjectViewSet)
 router.register(r'chatrooms', ChatRoomViewSet)
 router.register(r'messages', MessageViewSet)
-
+router.register(r'notifications', NotificationViewSet, basename='notification')
 
 router.register(r'projects', ProjectViewSet)  # Đảm bảo chỉ đăng ký 1 lần
 router.register(r'tasks', TaskViewSet)
@@ -56,5 +57,6 @@ urlpatterns = [
     path('calendar/events/<str:event_id>/update', views.update_event, name='update_event'),
     path('calendar/events/<str:event_id>/delete', views.delete_event, name='delete_event'),
     path('calendar/sync/google', views.sync_google_calendar),
+    path('', include(router.urls)),
 ]
 

@@ -17,3 +17,4 @@ from .calendar_views import (
     get_upcoming_events,
     sync_google_calendar,
 )
+from .notification import NotificationViewSet
