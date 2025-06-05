@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from api.views.project_member_views import ProjectMemberViewSet
 from api.views.user_view import UserViewSet
 from api.views.project_view import ProjectViewSet
 from api.views.task_view import TaskViewSet
@@ -22,12 +23,10 @@ router = DefaultRouter()
 
 # Đăng ký viewset với router
 router.register(r'users', UserViewSet)
-router.register(r'projects', ProjectViewSet)
 router.register(r'chatrooms', ChatRoomViewSet)
 router.register(r'messages', MessageViewSet)
 
-
-router.register(r'projects', ProjectViewSet)  # Đảm bảo chỉ đăng ký 1 lần
+router.register(r'projects', ProjectViewSet) 
 router.register(r'tasks', TaskViewSet)
 router.register(r'teams', TeamViewSet)
 
