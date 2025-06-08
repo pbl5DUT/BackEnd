@@ -318,7 +318,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             # Lấy parameters từ query string
             params = {
                 'user_id': user_id,
-                'include_completed': request.query_params.get('include_completed', 'false').lower() == 'true',
+                'include_completed': request.query_params.get('include_completed', 'true').lower() == 'true',
                 'project_id': request.query_params.get('project_id', ''),
                 'status': request.query_params.get('status', ''),
                 'priority': request.query_params.get('priority', ''),
