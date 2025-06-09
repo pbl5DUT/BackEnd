@@ -1,4 +1,5 @@
 # api/serializers/task_serializer.py
+from datetime import timezone
 from rest_framework import serializers
 from api.models.task import Task
 from api.models.user import User
@@ -139,9 +140,6 @@ class TaskSerializer(serializers.ModelSerializer):
         )
         
         return task
-
-
-
     
     def update(self, instance, validated_data):
         # Handle assignee update
@@ -190,3 +188,110 @@ class TaskSerializer(serializers.ModelSerializer):
             data['due_date_formatted'] = instance.due_date.strftime('%Y-%m-%d')
             
         return data
+
+
+class UserTasksSerializer(serializers.Serializer):
+    """Serializer để lấy tasks của user cụ thể"""
+    user_id = serializers.CharField(required=True)
+    include_completed = serializers.BooleanField(default=False)
+    project_id = serializers.CharField(required=False, allow_blank=True)
+    status = serializers.CharField(required=False, allow_blank=True)
+    priority = serializers.CharField(required=False, allow_blank=True)
+    
+    def validate_user_id(self, value):
+        """Validate user exists"""
+        try:
+            User.objects.get(user_id=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(f"User with id '{value}' does not exist")
+        return value
+    
+    def validate_project_id(self, value):
+        """Validate project exists if provided"""
+        if value and value.strip():
+            try:
+                Project.objects.get(project_id=value)
+            except Project.DoesNotExist:
+                raise serializers.ValidationError(f"Project with id '{value}' does not exist")
+        return value
+    
+    def get_user_tasks(self):
+        """Lấy tasks của user theo các filter được chỉ định"""
+        validated_data = self.validated_data
+        user_id = validated_data['user_id']
+        
+        # Base queryset
+        queryset = Task.objects.filter(assignee__user_id=user_id)
+        
+        # Filter theo completion status
+        if not validated_data.get('include_completed', False):
+            queryset = queryset.exclude(status='Done')
+        
+        # Filter theo project
+        if validated_data.get('project_id'):
+            queryset = queryset.filter(project__project_id=validated_data['project_id'])
+        
+        # Filter theo status
+        if validated_data.get('status'):
+            queryset = queryset.filter(status=validated_data['status'])
+        
+        # Filter theo priority
+        if validated_data.get('priority'):
+            queryset = queryset.filter(priority=validated_data['priority'])
+        
+        # Order by due_date và priority
+        queryset = queryset.select_related('assignee', 'project', 'category').order_by('due_date', '-priority')
+        
+        return queryset
+
+
+# Helper functions để sử dụng trong views
+def get_user_tasks(user_id, **filters):
+    """
+    Helper function để lấy tasks của user
+    
+    Args:
+        user_id: ID của user
+        **filters: Các filter khác như project_id, status, priority, include_completed
+    
+    Returns:
+        QuerySet của Task objects
+    """
+    data = {'user_id': user_id, **filters}
+    serializer = UserTasksSerializer(data=data)
+    
+    if serializer.is_valid():
+        return serializer.get_user_tasks()
+    else:
+        raise ValueError(f"Invalid parameters: {serializer.errors}")
+
+
+def get_user_task_summary(user_id):
+    """
+    Lấy summary về tasks của user
+    
+    Returns:
+        Dict với thông tin tổng quan về tasks
+    """
+    try:
+        user = User.objects.get(user_id=user_id)
+    except User.DoesNotExist:
+        raise ValueError(f"User with id '{user_id}' does not exist")
+    
+    tasks = Task.objects.filter(assignee=user)
+    
+    summary = {
+        'user_id': user_id,
+        'user_name': f"{user.first_name} {user.last_name}".strip(),
+        'total_tasks': tasks.count(),
+        'completed_tasks': tasks.filter(status='Done').count(),
+        'in_progress_tasks': tasks.filter(status='In Progress').count(),
+        'pending_tasks': tasks.filter(status='Pending').count(),
+        'overdue_tasks': tasks.filter(
+            due_date__lt=timezone.now().date(),
+            status__in=['Pending', 'In Progress']
+        ).count() if hasattr(tasks.first(), 'due_date') else 0,
+        'high_priority_tasks': tasks.filter(priority='High', status__in=['Pending', 'In Progress']).count(),
+    }
+    
+    return summary

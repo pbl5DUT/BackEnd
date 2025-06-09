@@ -2,7 +2,7 @@ from django.db import models
 from api.models.user import User
 from api.models.project import Project
 from api.models.task_category import TaskCategory
-import uuid
+from django.db import connection
 
 class Task(models.Model):
     STATUS_CHOICES = [
@@ -55,9 +55,21 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Tạo task_id duy nhất nếu chưa có
+        # Tạo task_id định dạng 'task-{id}' nếu chưa được thiết lập
         if not self.task_id:
-            self.task_id = f"task-{uuid.uuid4().hex[:8]}"
+            # Truy vấn trực tiếp để tìm ID lớn nhất từ tất cả task_id
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT MAX(CAST(SUBSTRING(task_id, 6) AS UNSIGNED)) FROM api_task")
+                result = cursor.fetchone()[0]
+                
+                # Nếu không có kết quả (bảng trống) hoặc lỗi, bắt đầu từ 1
+                if result is None:
+                    next_id = 1
+                else:
+                    next_id = result + 1
+                    
+                self.task_id = f'task-{next_id}'
+                print(f"Tạo task_id mới: {self.task_id}")
 
         # Cập nhật category_name nếu có category
         if self.category and not self.category_name:
