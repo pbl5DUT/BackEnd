@@ -1,14 +1,21 @@
-from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from api.models.project_user import ProjectUser
 from api.models.project import Project
-from api.serializers.project_serializer import ProjectSerializer
+from api.serializers import ProjectSerializer
+from rest_framework import viewsets
 
-class UserProjectsAPIView(APIView):
-    def get(self, request, user_id):
-        projects = Project.objects.filter(projectuser__user_id=user_id).distinct()
+
+class UserProjectsViewSet(viewsets.ViewSet): # type: ignore
+    def list(self, request, user_pk=None):
+        # Lấy danh sách các project_id mà user đang tham gia
+        project_ids = ProjectUser.objects.filter(user__user_id=user_pk).values_list('project_id', flat=True)
+
+        # Lấy danh sách Project tương ứng
+        projects = Project.objects.filter(project_id__in=project_ids).distinct()
+
+        # Serialize và trả về
         serializer = ProjectSerializer(projects, many=True)
         return Response({
-            "count": projects.count(),   # 👈 số lượng project
-            "projects": serializer.data  # 👈 danh sách project
-        }, status=status.HTTP_200_OK)
+            "count": projects.count(),
+            "projects": serializer.data
+        })

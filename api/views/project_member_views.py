@@ -8,8 +8,9 @@ from api.models.project_user import ProjectUser
 from api.serializers.project_member_serializer import AddProjectMemberSerializer
 from api.serializers.project_user_serializer import ProjectUserSerializer
 
-class ProjectViewSet(ModelViewSet):
+class ProjectMemberViewSet(ModelViewSet):
     # Thêm action để quản lý thành viên
+    queryset = ProjectUser.objects.all()  # Thêm dòng này
     @action(detail=True, methods=['post'])
     def add_member(self, request, pk=None):
         project = self.get_object()

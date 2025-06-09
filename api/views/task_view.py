@@ -2,21 +2,85 @@
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+from django.utils import timezone
+
 from api.models.task import Task
 from api.models.task_comment import TaskComment
 from api.models.task_attachment import TaskAttachment
-from api.serializers.task_serializer import TaskSerializer
+from api.models.user import User
+from api.models.project import Project
+
+from api.serializers.task_serializer import TaskSerializer, UserTasksSerializer
 from api.serializers.task_comment_serializer import TaskCommentSerializer
 from api.serializers.task_attachment_serializer import TaskAttachmentSerializer
+
+
+# Helper functions để lấy tasks theo user
+def get_user_tasks(user_id, **filters):
+    """
+    Helper function để lấy tasks của user
+    
+    Args:
+        user_id: ID của user
+        **filters: Các filter khác như project_id, status, priority, include_completed
+    
+    Returns:
+        QuerySet của Task objects
+    """
+    data = {'user_id': user_id, **filters}
+    serializer = UserTasksSerializer(data=data)
+    
+    if serializer.is_valid():
+        return serializer.get_user_tasks()
+    else:
+        raise ValueError(f"Invalid parameters: {serializer.errors}")
+
+
+def get_user_task_summary(user_id):
+    """
+    Lấy summary về tasks của user
+    
+    Returns:
+        Dict với thông tin tổng quan về tasks
+    """
+    try:
+        user = User.objects.get(user_id=user_id)
+    except User.DoesNotExist:
+        raise ValueError(f"User with id '{user_id}' does not exist")
+    
+    tasks = Task.objects.filter(assignee=user)
+    
+    summary = {
+        'user_id': user_id,
+        'user_name': f"{user.first_name} {user.last_name}".strip(),
+        'total_tasks': tasks.count(),
+        'completed_tasks': tasks.filter(status='Done').count(),
+        'in_progress_tasks': tasks.filter(status='In Progress').count(),
+        'pending_tasks': tasks.filter(status='Pending').count(),
+        'overdue_tasks': tasks.filter(
+            due_date__lt=timezone.now().date(),
+            status__in=['Pending', 'In Progress']
+        ).count(),
+        'high_priority_tasks': tasks.filter(priority='High', status__in=['Pending', 'In Progress']).count(),
+    }
+    
+    return summary
+
 
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     lookup_field = 'task_id'
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    permission_classes = []
+    
+    # Filtering và search
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'priority', 'assignee__user_id', 'project__project_id', 'category__id']
     search_fields = ['task_name', 'description']
     ordering_fields = ['created_at', 'due_date', 'priority', 'status', 'progress']
+    ordering = ['-created_at']
     
     def get_queryset(self):
         queryset = Task.objects.all()
@@ -95,7 +159,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
-    # Giữ nguyên các action hiện tại
+    # ===============================
+    # ORIGINAL ACTIONS (HIỆN TẠI)
+    # ===============================
+    
     @action(detail=True, methods=['get'])
     def comments(self, request, task_id=None):
         """
@@ -229,3 +296,277 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(task)
         return Response(serializer.data)
+    
+    # ===============================
+    # NEW USER TASK ACTIONS
+    # ===============================
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)')
+    def get_user_tasks(self, request, user_id=None):
+        """
+        API endpoint để lấy tất cả tasks của user cụ thể
+        
+        URL: /api/tasks/user/{user_id}/
+        
+        Query parameters:
+        - include_completed: boolean (default: false) - Bao gồm cả task đã hoàn thành
+        - project_id: string - Filter theo project
+        - status: string - Filter theo status
+        - priority: string - Filter theo priority
+        """
+        try:
+            # Lấy parameters từ query string
+            params = {
+                'user_id': user_id,
+                'include_completed': request.query_params.get('include_completed', 'true').lower() == 'true',
+                'project_id': request.query_params.get('project_id', ''),
+                'status': request.query_params.get('status', ''),
+                'priority': request.query_params.get('priority', ''),
+            }
+            
+            # Sử dụng helper function
+            tasks = get_user_tasks(**params)
+            
+            # Serialize tasks
+            serializer = TaskSerializer(tasks, many=True)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user_id': user_id,
+                    'tasks': serializer.data,
+                    'total_count': tasks.count(),
+                    'filters_applied': {k: v for k, v in params.items() if v and k != 'user_id'}
+                }
+            })
+            
+        except ValueError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': 'Internal server error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)/summary')
+    def get_user_task_summary(self, request, user_id=None):
+        """
+        API endpoint để lấy summary về tasks của user
+        
+        URL: /api/tasks/user/{user_id}/summary/
+        """
+        try:
+            summary = get_user_task_summary(user_id)
+            
+            return Response({
+                'success': True,
+                'data': summary
+            })
+            
+        except ValueError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': 'Internal server error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'], url_path='user/filter')
+    def filter_user_tasks(self, request):
+        """
+        API endpoint để lấy tasks của user với filter phức tạp
+        
+        URL: /api/tasks/user/filter/
+        Method: POST
+        
+        Body:
+        {
+            "user_id": "string",
+            "include_completed": boolean,
+            "project_id": "string",
+            "status": "string", 
+            "priority": "string"
+        }
+        """
+        serializer = UserTasksSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            try:
+                tasks = serializer.get_user_tasks()
+                task_serializer = TaskSerializer(tasks, many=True)
+                
+                return Response({
+                    'success': True,
+                    'data': {
+                        'tasks': task_serializer.data,
+                        'total_count': tasks.count(),
+                        'filters_applied': serializer.validated_data
+                    }
+                })
+                
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'error': 'Internal server error'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({
+            'success': False,
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)/pending')
+    def get_user_pending_tasks(self, request, user_id=None):
+        """
+        API endpoint để lấy tất cả pending tasks của user
+        
+        URL: /api/tasks/user/{user_id}/pending/
+        """
+        try:
+            tasks = get_user_tasks(user_id=user_id, status='Pending')
+            serializer = TaskSerializer(tasks, many=True)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user_id': user_id,
+                    'pending_tasks': serializer.data,
+                    'count': tasks.count()
+                }
+            })
+            
+        except ValueError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)/overdue')
+    def get_user_overdue_tasks(self, request, user_id=None):
+        """
+        API endpoint để lấy tất cả overdue tasks của user
+        
+        URL: /api/tasks/user/{user_id}/overdue/
+        """
+        try:
+            # Lấy tasks của user chưa hoàn thành
+            tasks = get_user_tasks(user_id=user_id, include_completed=False)
+            
+            # Filter chỉ lấy tasks overdue
+            overdue_tasks = tasks.filter(
+                due_date__lt=timezone.now().date()
+            )
+            
+            serializer = TaskSerializer(overdue_tasks, many=True)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user_id': user_id,
+                    'overdue_tasks': serializer.data,
+                    'count': overdue_tasks.count()
+                }
+            })
+            
+        except ValueError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)/project/(?P<project_id>[^/.]+)')
+    def get_user_tasks_by_project(self, request, user_id=None, project_id=None):
+        """
+        API endpoint để lấy tasks của user trong project cụ thể
+        
+        URL: /api/tasks/user/{user_id}/project/{project_id}/
+        """
+        try:
+            tasks = get_user_tasks(
+                user_id=user_id, 
+                project_id=project_id,
+                include_completed=request.query_params.get('include_completed', 'false').lower() == 'true'
+            )
+            
+            serializer = TaskSerializer(tasks, many=True)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user_id': user_id,
+                    'project_id': project_id,
+                    'tasks': serializer.data,
+                    'count': tasks.count()
+                }
+            })
+            
+        except ValueError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)/high-priority')
+    def get_user_high_priority_tasks(self, request, user_id=None):
+        """
+        API endpoint để lấy tất cả high priority tasks của user
+        
+        URL: /api/tasks/user/{user_id}/high-priority/
+        """
+        try:
+            tasks = get_user_tasks(user_id=user_id, priority='High', include_completed=False)
+            serializer = TaskSerializer(tasks, many=True)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user_id': user_id,
+                    'high_priority_tasks': serializer.data,
+                    'count': tasks.count()
+                }
+            })
+            
+        except ValueError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)/recent')
+    def get_user_recent_tasks(self, request, user_id=None):
+        """
+        API endpoint để lấy tasks gần đây của user (7 ngày gần nhất)
+        
+        URL: /api/tasks/user/{user_id}/recent/
+        """
+        try:
+            # Lấy tasks được tạo trong 7 ngày gần nhất
+            seven_days_ago = timezone.now() - timezone.timedelta(days=7)
+            tasks = get_user_tasks(user_id=user_id, include_completed=True)
+            recent_tasks = tasks.filter(created_at__gte=seven_days_ago)
+            
+            serializer = TaskSerializer(recent_tasks, many=True)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user_id': user_id,
+                    'recent_tasks': serializer.data,
+                    'count': recent_tasks.count(),
+                    'period': '7 days'
+                }
+            })
+            
+        except ValueError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
