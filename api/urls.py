@@ -23,6 +23,9 @@ from api.views import calendar_views as views
 
 from .views import NotificationViewSet
 
+from api.views.chatbot_view import chat_with_gpt
+
+
 
 
 router = DefaultRouter()
@@ -73,6 +76,7 @@ urlpatterns = [
     path('calendar/sync/google', views.sync_google_calendar),
 
     path('', include(router.urls)),
+    path("chat/", chat_with_gpt),
 ]
 
 
