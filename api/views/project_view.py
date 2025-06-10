@@ -234,7 +234,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-
     def create(self, request, *args, **kwargs):
         """Tạo project mới (giữ nguyên logic cũ)"""
         # Lấy bản sao của dữ liệu request

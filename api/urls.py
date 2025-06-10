@@ -77,6 +77,7 @@ urlpatterns = [
 
     path('', include(router.urls)),
     path("chat/", chat_with_gpt),
+    path('messages/upload_attachment/', MessageViewSet.as_view({'post': 'upload_attachment'})),
 ]
 
 
