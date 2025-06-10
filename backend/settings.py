@@ -82,6 +82,7 @@ CORS_ALLOW_METHODS = [
 ALLOWED_HOSTS = ['*']
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Nơi chứa tệp tĩnh đã được thu thập (cho môi trường sản xuất)
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -161,7 +162,7 @@ DATABASES = {
 
      'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pbl5_1',
+        'NAME': 'pbl5',
         'USER': 'root',  
         'PASSWORD': '',  
         'HOST': '127.0.0.1',
@@ -215,7 +216,7 @@ STATIC_URL = 'static/'
 
 # Media files (User uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

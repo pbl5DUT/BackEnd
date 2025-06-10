@@ -61,7 +61,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Chấp nhận kết nối WebSocket
             await self.accept()
             
-            print(f"✅ WebSocket connection accepted for user: {self.user.user_id} to room: {chatroom_id}")
+            print(f"WebSocket connection accepted for user: {self.user.user_id} to room: {chatroom_id}")
             
             # Gửi tin nhắn chào mừng hoặc thông báo trạng thái - SỬA LỖI Ở ĐÂY
             await self.send(text_data=json.dumps({
@@ -78,7 +78,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             return ChatRoom.objects.get(chatroom_id=chatroom_id)
         except ChatRoom.DoesNotExist:
-            return None    @database_sync_to_async
+            return None
+            
+    @database_sync_to_async
     def is_user_in_chatroom(self, user_id, chatroom_id):
         # Kiểm tra xem người dùng có phải là thành viên của phòng chat hay không
         return ChatRoomParticipant.objects.filter(
@@ -103,6 +105,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.handle_mark_read(data)
             elif message_type == 'typing':
                 await self.handle_typing_indicator(data)
+            # WebRTC signaling message handling
+            elif message_type == 'call_offer':
+                await self.handle_call_offer(data)
+            elif message_type == 'call_answer':
+                await self.handle_call_answer(data)
+            elif message_type == 'ice_candidate':
+                await self.handle_ice_candidate(data)
+            elif message_type == 'call_end':
+                await self.handle_call_end(data)
         except json.JSONDecodeError:
             pass
     
@@ -147,6 +158,170 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'is_typing': data.get('is_typing', False)
             }
         )
+
+    # WebRTC Signaling Handlers
+    async def handle_call_offer(self, data):
+        print(f"📞 Received call offer from {data.get('userId')} for room {data.get('roomId')}")
+        
+        # For group calls, we need to know who the target is
+        target_participant_id = data.get('targetParticipantId')
+        
+        if target_participant_id:
+            print(f"📞 Call offer is for specific participant: {target_participant_id}")
+            # Forward the offer only to the specific participant
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_offer',
+                    'data': data,
+                    'target_participant_id': target_participant_id
+                }
+            )
+        else:
+            # For backward compatibility with one-on-one calls
+            print(f"📞 Broadcasting call offer to all participants in room")
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_offer',
+                    'data': data
+                }
+            )
+
+    async def handle_call_answer(self, data):
+        print(f"📞 Received call answer from {data.get('userId')} for room {data.get('roomId')}")
+        
+        # For group calls, we need to know who the target is
+        target_participant_id = data.get('targetParticipantId')
+        
+        if target_participant_id:
+            print(f"📞 Call answer is for specific participant: {target_participant_id}")
+            # Forward the answer only to the specific participant
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_answer',
+                    'data': data,
+                    'target_participant_id': target_participant_id
+                }
+            )
+        else:
+            # For backward compatibility with one-on-one calls
+            print(f"📞 Broadcasting call answer to all participants in room")
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_answer',
+                    'data': data
+                }
+            )
+
+    async def handle_ice_candidate(self, data):
+        print(f"🧊 Received ICE candidate from {data.get('userId')} for room {data.get('roomId')}")
+        
+        # For group calls, we need to know who the target is
+        target_participant_id = data.get('targetParticipantId')
+        
+        if target_participant_id:
+            print(f"🧊 ICE candidate is for specific participant: {target_participant_id}")
+            # Forward the ICE candidate only to the specific participant
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_ice_candidate',
+                    'data': data,
+                    'target_participant_id': target_participant_id
+                }
+            )
+        else:
+            # For backward compatibility with one-on-one calls
+            print(f"🧊 Broadcasting ICE candidate to all participants in room")
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_ice_candidate',
+                    'data': data
+                }
+            )
+
+    async def handle_call_end(self, data):
+        print(f"📞 Received call end from {data.get('userId')} for room {data.get('roomId')}")
+        
+        # Broadcast call end to all participants
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'webrtc_call_end',
+                'data': data
+            }
+        )
+
+    # WebRTC Message Dispatchers
+    async def webrtc_offer(self, event):
+        data = event['data']
+        target_participant_id = event.get('target_participant_id')
+        
+        # Check if this message is for a specific participant
+        if target_participant_id and str(self.user.user_id) != str(target_participant_id):
+            print(f"Skip forwarding offer - targeted participant {target_participant_id} doesn't match {self.user.user_id}")
+            return
+        
+        # Send the offer to the client
+        print(f"Sending call offer to user {self.user.user_id}")
+        await self.send(text_data=json.dumps({
+            'type': 'webrtc_signal',
+            'signal_type': 'call_offer',
+            'sdp': data.get('sdp'),
+            'userId': data.get('userId'),
+            'isAudioOnly': data.get('isAudioOnly', False)
+        }))
+
+    async def webrtc_answer(self, event):
+        data = event['data']
+        target_participant_id = event.get('target_participant_id')
+        
+        # Check if this message is for a specific participant
+        if target_participant_id and str(self.user.user_id) != str(target_participant_id):
+            print(f"Skip forwarding answer - targeted participant {target_participant_id} doesn't match {self.user.user_id}")
+            return
+            
+        # Send the answer to the client
+        print(f"Sending call answer to user {self.user.user_id}")
+        await self.send(text_data=json.dumps({
+            'type': 'webrtc_signal',
+            'signal_type': 'call_answer',
+            'sdp': data.get('sdp'),
+            'userId': data.get('userId')
+        }))
+
+    async def webrtc_ice_candidate(self, event):
+        data = event['data']
+        target_participant_id = event.get('target_participant_id')
+        
+        # Check if this message is for a specific participant
+        if target_participant_id and str(self.user.user_id) != str(target_participant_id):
+            print(f"Skip forwarding ICE candidate - targeted participant {target_participant_id} doesn't match {self.user.user_id}")
+            return
+            
+        # Send the ICE candidate to the client
+        print(f"Sending ICE candidate to user {self.user.user_id}")
+        await self.send(text_data=json.dumps({
+            'type': 'webrtc_signal',
+            'signal_type': 'ice_candidate',
+            'candidate': data.get('candidate'),
+            'userId': data.get('userId')
+        }))
+
+    async def webrtc_call_end(self, event):
+        data = event['data']
+        
+        # Send the call end to all clients
+        print(f"Sending call end to user {self.user.user_id}")
+        await self.send(text_data=json.dumps({
+            'type': 'webrtc_signal',
+            'signal_type': 'call_end',
+            'userId': data.get('userId')
+        }))
     
     async def chat_message(self, event):
         print(f"🔔 Sending chat message to client: {event['message'].get('message_id', 'unknown')}")
@@ -172,6 +347,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'username': event['username'],
             'is_typing': event['is_typing']
         }))
+    
     @database_sync_to_async
     def is_participant(self, chatroom_id, user_id):
         try:

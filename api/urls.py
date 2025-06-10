@@ -67,6 +67,10 @@ urlpatterns = [
     path('calendar/events/<str:event_id>/delete', views.delete_event, name='delete_event'),
     path('calendar/sync/google', views.sync_google_calendar),
 
+
     # Chức năng chatbot
     path('chat/', chat_with_gpt),
+    path("chat/", chat_with_gpt),
+    path('messages/upload_attachment/', MessageViewSet.as_view({'post': 'upload_attachment'})),
+\
 ]
