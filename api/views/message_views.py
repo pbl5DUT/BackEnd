@@ -1,9 +1,11 @@
 import uuid
+import os
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.conf import settings
 
 from api.models.message import Message
 from api.models.chatroom import ChatRoom
@@ -66,54 +68,85 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_attachment(self, request):
-        file = request.FILES.get('file')
-        if not file:
-            return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
-        
+        file_obj = request.FILES.get('file')
         chatroom_id = request.data.get('chatroom_id')
+        receiver_id = request.data.get('receiver_id')
+        
+        if not file_obj or not chatroom_id:
+            return Response({"error": "File and chatroom_id are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
         try:
             chatroom = ChatRoom.objects.get(chatroom_id=chatroom_id)
+            
+            # Get file type from file extension
+            file_name = file_obj.name
+            file_extension = file_name.split('.')[-1].lower() if '.' in file_name else ''
+            
+            # Determine attachment type based on extension
+            attachment_type = 'image'
+            if file_extension in ['mp4', 'avi', 'mov', 'wmv']:
+                attachment_type = 'video'
+            elif file_extension in ['doc', 'docx', 'pdf', 'txt', 'xls', 'xlsx', 'ppt', 'pptx']:
+                attachment_type = 'document'
+                
+            # Create attachments directory under MEDIA_ROOT
+            upload_dir = os.path.join(settings.MEDIA_ROOT, 'attachments')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Generate unique filename
+            unique_filename = f"{uuid.uuid4().hex[:8]}_{file_name}"
+            
+            # Save file relative to MEDIA_ROOT
+            file_path = f"attachments/{unique_filename}"
+            full_path = os.path.join(settings.MEDIA_ROOT, 'attachments', unique_filename)
+            
+            # Save file
+            with open(full_path, 'wb+') as destination:
+                for chunk in file_obj.chunks():
+                    destination.write(chunk)
+            
+            # Create URL path with forward slashes
+            attachment_url = f"{settings.MEDIA_URL.rstrip('/')}/attachments/{unique_filename}"
+            
+            # Create message with appropriate content based on attachment type
+            message_id = f"msg-{str(uuid.uuid4())[:8]}"
+            
+            # Create content based on attachment type
+            if attachment_type == 'image':
+                content = f'<img src="{attachment_url}" alt="{file_name}" style="max-width: 100%; max-height: 300px;" />'
+            elif attachment_type == 'video':
+                content = f'<video controls style="max-width: 100%;"><source src="{attachment_url}" type="video/{file_extension}"></video>'
+            else:
+                content = f'<a href="{attachment_url}" target="_blank" download="{file_name}"><i class="document-icon"></i> {file_name}</a>'
+            
+            message = Message.objects.create(
+                message_id=message_id,
+                chatroom=chatroom,
+                sent_by=request.user,
+                content=content,
+                attachment_url=attachment_url,
+                attachment_type=attachment_type
+            )
+            
+            # Handle receiver if provided
+            if receiver_id:
+                try:
+                    receiver = User.objects.get(user_id=receiver_id)
+                    message.receiver = receiver
+                    message.save()
+                except User.DoesNotExist:
+                    pass
+            
+            serializer = self.get_serializer(message)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
         except ChatRoom.DoesNotExist:
             return Response({"error": "Chat room not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Handle file upload logic here (save to S3, local storage, etc.)
-        # For simplicity, we're just creating a message with attachment info
-        
-        message_id = f"msg-{str(uuid.uuid4())[:8]}"
-        
-        # Determine attachment type based on file extension
-        filename = file.name.lower()
-        attachment_type = 'document'  # Default
-        if filename.endswith(('.jpg', '.jpeg', '.png', '.gif')):
-            attachment_type = 'image'
-        elif filename.endswith(('.mp3', '.wav', '.ogg')):
-            attachment_type = 'audio'
-        elif filename.endswith(('.mp4', '.mov', '.avi')):
-            attachment_type = 'video'
-        
-        # Save file and get URL (assuming you have a file storage configuration)
-        # file_url = your_storage_handler.save(file)
-        
-        # For demo purposes, we'll just use a placeholder
-        file_url = f"/media/attachments/{file.name}"
-        
-        # Optional receiver
-        receiver = None
-        if request.data.get('receiver_id'):
-            try:
-                receiver = User.objects.get(user_id=request.data.get('receiver_id'))
-            except User.DoesNotExist:
-                pass
-        
-        message = Message.objects.create(
-            message_id=message_id,
-            content=f"Sent an attachment: {file.name}",
-            attachment_url=file_url,
-            attachment_type=attachment_type,
-            chatroom=chatroom,
-            sent_by=request.user,
-            receiver=receiver
-        )
-        
-        serializer = MessageSerializer(message)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            import traceback
+            print(f"Error uploading file: {str(e)}")
+            print(traceback.format_exc())
+            return Response(
+                {"error": f"Error uploading file: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

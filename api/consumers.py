@@ -61,7 +61,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Chấp nhận kết nối WebSocket
             await self.accept()
             
-            print(f"✅ WebSocket connection accepted for user: {self.user.user_id} to room: {chatroom_id}")
+            print(f"WebSocket connection accepted for user: {self.user.user_id} to room: {chatroom_id}")
             
             # Gửi tin nhắn chào mừng hoặc thông báo trạng thái - SỬA LỖI Ở ĐÂY
             await self.send(text_data=json.dumps({
