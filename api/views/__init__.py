@@ -18,4 +18,4 @@ from .calendar_views import (
     sync_google_calendar,
 )
 from .notification import NotificationViewSet
-from .chatbot_view import chat_with_gpt
+from .chatAI_view import ask_question

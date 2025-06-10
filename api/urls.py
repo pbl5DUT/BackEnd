@@ -23,17 +23,12 @@ from api.views import calendar_views as views
 
 from .views import NotificationViewSet
 
-from api.views.chatbot_view import chat_with_gpt
-
-
-
+from api.views.chatAI_view import ask_question
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'chatrooms', ChatRoomViewSet)
 router.register(r'messages', MessageViewSet)
-
-
 router.register(r'notifications', NotificationViewSet, basename='notification')
 
 router.register(r'projects', ProjectViewSet)  # Đảm bảo chỉ đăng ký 1 lần
@@ -54,14 +49,11 @@ user_router.register(r'projects', UserProjectsViewSet, basename='user-projects')
 
 urlpatterns = [
 
-
-    # ✅ Bao gồm router DRF
     path('', include(router.urls)),
     path('', include(user_router.urls)),  
     path('', include(project_router.urls)),
     path('', include(task_category_router.urls)),
 
-    # ✅ Các route khác
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('send-password-email/', send_password_email, name='send_password_email'),
@@ -76,7 +68,8 @@ urlpatterns = [
     path('calendar/sync/google', views.sync_google_calendar),
 
     path('', include(router.urls)),
-    path("chat/", chat_with_gpt),
+    path('chat-ai/', ask_question, name='ask_question'),
+   
 ]
 
 
